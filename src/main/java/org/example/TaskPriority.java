@@ -1,5 +1,5 @@
 package org.example;
 
-enum TaskPriority {
+public enum TaskPriority {
     LOWEST, LOW, MIDDLE, HIGH
 }

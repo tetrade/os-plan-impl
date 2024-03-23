@@ -1,17 +1,23 @@
 package org.example;
 
+import java.util.concurrent.ArrayBlockingQueue;
+import java.util.concurrent.BlockingQueue;
 import java.util.concurrent.CancellationException;
+import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.ExecutionException;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 import java.util.concurrent.Future;
+import java.util.concurrent.ScheduledExecutorService;
 import java.util.logging.Level;
 
 public class Planner implements Runnable {
-
+    private boolean isRunning = false;
     private Task currentTask;
+
     private Future<Task> future;
-    private final ExecutorService executorService = Executors.newSingleThreadExecutor();
+
+    private final ExecutorService mainTaskExecutor = Executors.newSingleThreadExecutor();
 
     /**
      * Реализует все очереди вместе, поскольку сам сортирует элементы по приоритету при добавлении
@@ -19,21 +25,33 @@ public class Planner implements Runnable {
      */
     private final CombinedTaskQueue queue = new CombinedTaskQueue();
 
+
     @Override
     public void run() {
-        while (true) {
-            currentTask = queue.take();
-            Logger.log(Level.ALL, currentTask + " WANT TO EXECUTE");
-            future = executorService.submit(currentTask);
-            try {
-                Task endedTask = future.get();
-                endedTask.setCurrentState(TaskState.SUSPENDED); // GOODBYE ....
-            } catch (InterruptedException | ExecutionException E) {}
-            catch (CancellationException c) {
-                queue.add(currentTask); // случай прерывания текущей задачи до завершения
+        if (!isRunning) {
+            // запуск процесса на просматривание готовых задач
+            isRunning = true;
+            while (isRunning) {
+
+                currentTask = queue.take();
+                Logger.log(Level.ALL, currentTask + " WANT TO EXECUTE");
+                future = mainTaskExecutor.submit(currentTask);
+                try {
+                    Task endedTask = future.get();
+
+                    if (currentTask.getCurrentState() == TaskState.WAIT) {
+                        CompletableFuture.supplyAsync(currentTask::waitSomething).thenAccept(queue::add);
+                    } else {
+                        endedTask.setCurrentState(TaskState.SUSPENDED);
+                    }
+
+                } catch (InterruptedException | ExecutionException E) {
+                } catch (CancellationException c) {
+                        queue.add(currentTask); // случай прерывания текущей задачи до завершения
+                    }
+                }
             }
         }
-    }
 
     public boolean addTask(Task task) {
         synchronized (this) {
@@ -52,5 +70,9 @@ public class Planner implements Runnable {
             }
             return wereAdded;
         }
+    }
+
+    public void stop() {
+        this.isRunning = false;
     }
 }
