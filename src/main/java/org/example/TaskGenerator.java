@@ -13,9 +13,9 @@ public class TaskGenerator {
 
     public static Task createRandomTask() {
         if (random.nextInt(4) <= 1) {
-            return Task.of(randomEnum(TaskPriority.class), random.nextLong(500L, 5000L));
+            return Task.of(randomEnum(TaskPriority.class), random.nextLong(500L, 2000));
         }
-        return ExtendedTask.of(randomEnum(TaskPriority.class), random.nextLong(500L, 5000L));
+        return ExtendedTask.of(randomEnum(TaskPriority.class), random.nextLong(500, 2000));
     }
 
     public static List<Task> createTasks(int count) {

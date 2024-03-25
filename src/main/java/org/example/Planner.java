@@ -67,6 +67,8 @@ public class Planner implements Runnable {
                     Logger.log(Level.INFO, "WANT INTERRUPT " + currentTask + " TO EXECUTE " + task);
                     future.cancel(true);
                 }
+            } else {
+                Logger.log(Level.INFO, "PLANNER CANT ADD " + task + " NOT ENOUGH SPACE");
             }
             return wereAdded;
         }
