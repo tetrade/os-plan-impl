@@ -1,12 +1,7 @@
 package org.example;
 
-import java.util.Objects;
-import java.util.Random;
 import java.util.concurrent.ThreadLocalRandom;
-import java.util.concurrent.TimeUnit;
 import java.util.logging.Level;
-
-import org.apache.commons.lang3.time.StopWatch;
 
 public class ExtendedTask extends Task {
 
@@ -45,47 +40,30 @@ public class ExtendedTask extends Task {
     @Override
     public Task call() {
         Logger.log(Level.INFO, this + " START EXECUTE");
-        setLastRunStartTime(System.currentTimeMillis());
         try {
-           Thread.sleep(getRuntime());
+            startOrResumeWatcher();
+            Thread.sleep(getRuntime() - getWatcher().getTime());
         } catch (InterruptedException e) {
-            updateRunningTime();
-            Logger.log(Level.INFO, this + " INTERRUPTED. STILL NEED " + getNeedRuntimeBeforeWait() + getNeedRunTime() + " RUNTIME");
+            getWatcher().suspend();
+            long leftTime = (needToWait ? getNeedRunTime() + getNeedRuntimeBeforeWait() : getNeedRunTime()) - getWatcher().getTime();
+                    Logger.log(Level.INFO, this + " INTERRUPTED. STILL NEED " + leftTime + " RUNTIME");
             return this;
         }
 
         if (needToWait) {
-            setNeedRuntimeBeforeWait(0);
+            getWatcher().reset();
             Logger.log(Level.INFO, this + " WANT WAIT");
             setCurrentState(TaskState.WAIT);
         } else {
+            getWatcher().stop();
             Logger.log(Level.INFO, this + " END EXECUTE");
         }
         return this;
     }
 
     @Override
-    protected void updateRunningTime() {
-        setStartWaitingTime(System.currentTimeMillis());
-        if (needToWait) {
-            updateNeededRunTime();
-        } else {
-            updateNeedBeforeWaitRuntime();
-        }
-    }
-
-    @Override
     protected long getRuntime() {
        return Math.abs(needToWait ? getNeedRuntimeBeforeWait() : getNeedRunTime());
-    }
-
-    private void updateNeedBeforeWaitRuntime() {
-        setNeedRuntimeBeforeWait(getNeedRuntimeBeforeWait() - (getStartWaitingTime() - getLastRunStartTime()));
-    }
-
-    @Override
-    public void updateNeededRunTime() {
-       setNeedRunTime(getNeedRunTime() - (getStartWaitingTime() - getLastRunStartTime()));
     }
 
     public long getNeedRuntimeBeforeWait() {

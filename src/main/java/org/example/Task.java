@@ -16,6 +16,8 @@ public class Task implements Callable<Task>, Comparable<Task> {
     private final TaskPriority priority;
     private final String uuid = UUID.randomUUID().toString();
 
+    private final StopWatch watcher = new StopWatch();
+
     public static Task of(TaskPriority priority, long needRunTime) {
         return new Task(priority, needRunTime);
     }
@@ -29,14 +31,17 @@ public class Task implements Callable<Task>, Comparable<Task> {
     @Override
     public Task call() {
         Logger.log(Level.INFO, this + " START EXECUTE");
-        lastRunStartTime = System.currentTimeMillis();
         try {
-            Thread.sleep(getRuntime());
+            startOrResumeWatcher();
+            Thread.sleep(getRuntime() - watcher.getTime());
         } catch (InterruptedException e) {
-            updateRunningTime();
-            Logger.log(Level.INFO, this + " INTERRUPTED. STILL NEED " + needRunTime + " RUNTIME");
+
+            watcher.suspend();
+            Logger.log(Level.INFO, this + " INTERRUPTED. STILL NEED " + (needRunTime - watcher.getTime()) + " RUNTIME");
             return this;
+
         }
+        watcher.stop();
         Logger.log(Level.INFO, this + " END EXECUTE");
         return this;
     }
@@ -48,10 +53,6 @@ public class Task implements Callable<Task>, Comparable<Task> {
         return comparePriority;
     }
 
-    public void updateNeededRunTime() {
-        this.needRunTime -= (startWaitingTime - lastRunStartTime);
-    }
-
     @Override
     public String toString() {
         return "Task{" +
@@ -60,9 +61,12 @@ public class Task implements Callable<Task>, Comparable<Task> {
                 '}';
     }
 
-    protected void updateRunningTime() {
-        setStartWaitingTime(System.currentTimeMillis());
-        updateNeededRunTime();
+    protected void startOrResumeWatcher() {
+        if (watcher.isSuspended()) {
+            watcher.resume();
+        } else {
+            watcher.start();
+        }
     }
 
     protected long getRuntime() {
@@ -107,6 +111,10 @@ public class Task implements Callable<Task>, Comparable<Task> {
 
     protected void setNeedRunTime(long needRunTime) {
         this.needRunTime = needRunTime;
+    }
+
+    public StopWatch getWatcher() {
+        return watcher;
     }
 
     public Task waitSomething() {

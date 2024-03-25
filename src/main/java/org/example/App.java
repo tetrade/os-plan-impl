@@ -16,6 +16,7 @@ public class App {
         Task t1 = Task.of(TaskPriority.LOW, 100);
 
         List<Task> tasks = List.of(t1,
+                ExtendedTask.of(TaskPriority.LOWEST, 10000),
                 ExtendedTask.of(TaskPriority.MIDDLE, 500), Task.of(TaskPriority.HIGH, 500),
                 Task.of(TaskPriority.LOW, 4000), Task.of(TaskPriority.HIGH, 1000),
                 Task.of(TaskPriority.MIDDLE, 500), ExtendedTask.of(TaskPriority.LOWEST, 1000),
