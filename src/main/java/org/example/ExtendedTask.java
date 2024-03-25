@@ -3,6 +3,8 @@ package org.example;
 import java.util.concurrent.ThreadLocalRandom;
 import java.util.logging.Level;
 
+import com.google.common.base.Preconditions;
+
 public class ExtendedTask extends Task {
 
     private static final long MAX_RANDOM_LONG_WAIT_TIME = 3000;
@@ -21,11 +23,16 @@ public class ExtendedTask extends Task {
         long waitAt = ThreadLocalRandom.current().nextLong(needRunTime);
         long waitTime = ThreadLocalRandom.current().nextLong(MAX_RANDOM_LONG_WAIT_TIME);
 
-        return new ExtendedTask(priority, needRunTime - waitTime, waitAt, waitTime);
+        return new ExtendedTask(priority, needRunTime - waitAt, waitAt, waitTime);
+    }
+
+    public static ExtendedTask of(TaskPriority priority, long needRunTime, long waitAt, long waitTime) {
+        return new ExtendedTask(priority, needRunTime - waitAt, waitAt, waitTime);
     }
 
     @Override
     public Task waitSomething() {
+        Preconditions.checkArgument(getCurrentState() == TaskState.WAIT, "Wait can only when WAIT task state");
         Logger.log(Level.INFO, this + " BEGIN TO WAIT ... ");
         try {
             Thread.sleep(waitTime);
@@ -39,6 +46,8 @@ public class ExtendedTask extends Task {
 
     @Override
     public Task call() {
+        Preconditions.checkArgument(getCurrentState() == TaskState.READY, "Can run only READY task state");
+        setCurrentState(TaskState.RUNNING);
         Logger.log(Level.INFO, this + " START EXECUTE");
         try {
             startOrResumeWatcher();
@@ -49,7 +58,6 @@ public class ExtendedTask extends Task {
                     Logger.log(Level.INFO, this + " INTERRUPTED. STILL NEED " + leftTime + " RUNTIME");
             return this;
         }
-
         if (needToWait) {
             getWatcher().reset();
             Logger.log(Level.INFO, this + " WANT WAIT");
@@ -57,6 +65,7 @@ public class ExtendedTask extends Task {
         } else {
             getWatcher().stop();
             Logger.log(Level.INFO, this + " END EXECUTE");
+            setCurrentState(TaskState.SUSPENDED);
         }
         return this;
     }
@@ -72,7 +81,7 @@ public class ExtendedTask extends Task {
 
     @Override
     protected long getRuntime() {
-       return Math.abs(needToWait ? getNeedRuntimeBeforeWait() : getNeedRunTime());
+       return Math.max(0, needToWait ? getNeedRuntimeBeforeWait() : getNeedRunTime());
     }
 
     public long getNeedRuntimeBeforeWait() {

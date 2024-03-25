@@ -4,6 +4,8 @@ import java.util.UUID;
 import java.util.concurrent.Callable;
 import java.util.logging.Level;
 
+import com.google.common.base.Preconditions;
+
 import org.apache.commons.lang3.time.StopWatch;
 
 public class Task implements Callable<Task>, Comparable<Task> {
@@ -30,6 +32,9 @@ public class Task implements Callable<Task>, Comparable<Task> {
 
     @Override
     public Task call() {
+        Preconditions.checkArgument(getCurrentState() == TaskState.READY, "Can run only READY tasks");
+        setCurrentState(TaskState.RUNNING);
+
         Logger.log(Level.INFO, this + " START EXECUTE");
         try {
             startOrResumeWatcher();
@@ -42,15 +47,22 @@ public class Task implements Callable<Task>, Comparable<Task> {
 
         }
         watcher.stop();
+
+        setCurrentState(TaskState.SUSPENDED);
+
         Logger.log(Level.INFO, this + " END EXECUTE");
         return this;
     }
 
     @Override
     public int compareTo(Task o) {
-        int comparePriority = this.priority.ordinal() - o.priority.ordinal();
-        if (comparePriority == 0) return Long.signum(o.startWaitingTime - this.startWaitingTime);
+        int comparePriority = o.priority.ordinal() - this.priority.ordinal();
+        if (comparePriority == 0) return Long.signum(this.startWaitingTime - o.startWaitingTime);
         return comparePriority;
+    }
+
+    public int comparePriority(Task o) {
+        return o.priority.ordinal() - this.priority.ordinal();
     }
 
     @Override
@@ -71,10 +83,11 @@ public class Task implements Callable<Task>, Comparable<Task> {
     }
 
     protected long getRuntime() {
-        return Math.abs(getNeedRunTime());
+        return Math.max(getNeedRunTime(), 0);
     }
 
     public void setCurrentState(TaskState currentState) {
+        Preconditions.checkArgument(this.getCurrentState().nextStates().contains(currentState), "Illegal transition");
         this.currentState = currentState;
     }
 
@@ -122,4 +135,6 @@ public class Task implements Callable<Task>, Comparable<Task> {
         Logger.log(Level.INFO, "BRO ... I DONT NEED IT");
         return this;
     }
+
+
 }

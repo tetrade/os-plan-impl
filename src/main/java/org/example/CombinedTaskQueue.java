@@ -1,6 +1,5 @@
 package org.example;
 
-import java.util.Comparator;
 import java.util.concurrent.PriorityBlockingQueue;
 
 public class CombinedTaskQueue extends PriorityBlockingQueue<Task> {
@@ -8,7 +7,7 @@ public class CombinedTaskQueue extends PriorityBlockingQueue<Task> {
     private static final int MAX_READY_TASK = 10;
 
     public CombinedTaskQueue() {
-        super(MAX_READY_TASK, Comparator.reverseOrder());
+        super(MAX_READY_TASK);
     }
 
     /**
@@ -22,6 +21,7 @@ public class CombinedTaskQueue extends PriorityBlockingQueue<Task> {
     @Override
     public boolean add(Task task) {
         synchronized (this) {
+            task.setStartWaitingTime(System.currentTimeMillis());
             boolean added = (task.getCurrentState().equals(TaskState.WAIT) || remainingCapacity() > 0) && super.add(task);
             if (added) {
                 task.setCurrentState(TaskState.READY);
@@ -36,9 +36,8 @@ public class CombinedTaskQueue extends PriorityBlockingQueue<Task> {
         try {
              t = super.take();
         } catch (InterruptedException e) {
-            return  null;
+            return null;
         }
-        t.setCurrentState(TaskState.RUNNING);
         return t;
     }
 

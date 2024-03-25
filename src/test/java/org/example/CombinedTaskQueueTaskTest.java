@@ -39,7 +39,6 @@ class CombinedTaskQueueTaskTest {
         underTest.add(shouldBeTaken);
 
         Assertions.assertThat(underTest.take()).isEqualTo(shouldBeTaken);
-        Assertions.assertThat(shouldBeTaken.getCurrentState()).isEqualTo(TaskState.RUNNING);
     }
 
     @Test

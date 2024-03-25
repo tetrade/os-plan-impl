@@ -1,5 +1,7 @@
 package org.example;
 
+import java.util.ArrayList;
+import java.util.List;
 import java.util.concurrent.CancellationException;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.ExecutionException;
@@ -21,6 +23,7 @@ public class Planner implements Runnable {
      * и является потокобезопасным
      */
     private final CombinedTaskQueue queue = new CombinedTaskQueue();
+    private final List<Task> completedTasks = new ArrayList<>();
 
 
     @Override
@@ -36,10 +39,10 @@ public class Planner implements Runnable {
                 try {
                     Task endedTask = future.get();
 
-                    if (currentTask.getCurrentState() == TaskState.WAIT) {
-                        CompletableFuture.supplyAsync(currentTask::waitSomething).thenAccept(queue::add);
+                    if (endedTask.getCurrentState() == TaskState.WAIT) {
+                        CompletableFuture.supplyAsync(currentTask::waitSomething).thenAccept(this::addTask);
                     } else {
-                        endedTask.setCurrentState(TaskState.SUSPENDED);
+                        completedTasks.add(endedTask);
                     }
 
                 } catch (InterruptedException | ExecutionException E) {
@@ -60,8 +63,8 @@ public class Planner implements Runnable {
                  * и то, что в очереди хватит места на задачу, которая вернется в очередь на исполнение после
                  * прерывания
                  */
-                if (currentTask != null && task.compareTo(currentTask) > 0 && queue.remainingCapacity() >= 1) {
-                    Logger.log(Level.INFO, "WANT INTERRUPT " + currentTask + "  TO EXECUTE " + task);
+                if (currentTask != null && task.comparePriority(currentTask) < 0 && queue.remainingCapacity() >= 1) {
+                    Logger.log(Level.INFO, "WANT INTERRUPT " + currentTask + " TO EXECUTE " + task);
                     future.cancel(true);
                 }
             }
@@ -71,5 +74,9 @@ public class Planner implements Runnable {
 
     public void stop() {
         this.isRunning = false;
+    }
+
+    public List<Task> getCompletedTasks() {
+        return completedTasks;
     }
 }
