@@ -62,6 +62,15 @@ public class ExtendedTask extends Task {
     }
 
     @Override
+    public String toString() {
+        return "Task{" +
+                "priority=" + getPriority() +
+                ", needRunTime=" + (getNeedRunTime() + getNeedRuntimeBeforeWait()) +
+                ", uuid='" + getUuid() + '\'' +
+                '}';
+    }
+
+    @Override
     protected long getRuntime() {
        return Math.abs(needToWait ? getNeedRuntimeBeforeWait() : getNeedRunTime());
     }

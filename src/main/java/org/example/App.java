@@ -13,15 +13,17 @@ import java.util.concurrent.ThreadLocalRandom;
 public class App {
     public static void main( String[] args ) {
 
-        Task t1 = Task.of(TaskPriority.LOW, 100);
+//        Task t1 = Task.of(TaskPriority.LOW, 100);
 
-        List<Task> tasks = List.of(t1,
-                ExtendedTask.of(TaskPriority.LOWEST, 10000),
-                ExtendedTask.of(TaskPriority.MIDDLE, 500), Task.of(TaskPriority.HIGH, 500),
-                Task.of(TaskPriority.LOW, 4000), Task.of(TaskPriority.HIGH, 1000),
-                Task.of(TaskPriority.MIDDLE, 500), ExtendedTask.of(TaskPriority.LOWEST, 1000),
-                Task.of(TaskPriority.HIGH, 2000), ExtendedTask.of(TaskPriority.HIGH, 2000)
-        );
+//        List<Task> tasks = List.of(t1,
+//                ExtendedTask.of(TaskPriority.LOWEST, 10000),
+//                ExtendedTask.of(TaskPriority.MIDDLE, 500), Task.of(TaskPriority.HIGH, 500),
+//                Task.of(TaskPriority.LOW, 4000), Task.of(TaskPriority.HIGH, 1000),
+//                Task.of(TaskPriority.MIDDLE, 500), ExtendedTask.of(TaskPriority.LOWEST, 1000),
+//                Task.of(TaskPriority.HIGH, 2000), ExtendedTask.of(TaskPriority.HIGH, 2000)
+//        );
+
+        List<Task> tasks = TaskGenerator.createTasks(20);
 
         Planner planner = new Planner();
         ExecutorService executorService = Executors.newSingleThreadExecutor();

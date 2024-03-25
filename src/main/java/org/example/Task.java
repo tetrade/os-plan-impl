@@ -57,6 +57,7 @@ public class Task implements Callable<Task>, Comparable<Task> {
     public String toString() {
         return "Task{" +
                 "priority=" + priority +
+                ", needRunTime=" + needRunTime +
                 ", uuid='" + uuid + '\'' +
                 '}';
     }
